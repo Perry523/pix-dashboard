@@ -35,8 +35,6 @@ const shareLink = computed(() => {
     return `${window.location.origin}/pix/${props.pix.token}`;
 });
 
-// Removed static countdown - server handles expiration with notifications
-
 const getStatusBadge = (status: string) => {
     switch (status) {
         case 'paid':
@@ -62,7 +60,7 @@ const handleCopy = async (type: 'token' | 'link', text: string) => {
 
 const handleShare = async () => {
     if (!props.pix) return;
-    
+
     if (navigator.share) {
         try {
             await navigator.share({
@@ -108,11 +106,7 @@ const formatDate = (dateString: string) => {
                     <Label class="text-sm font-medium">QR Code para Pagamento</Label>
                     <div class="mt-3 flex justify-center">
                         <div class="p-3 bg-white border-2 border-gray-200 rounded-lg inline-block">
-                            <img 
-                                :src="`/pix/${pix.token}/qrcode`" 
-                                alt="QR Code PIX"
-                                class="w-32 h-32"
-                            />
+                            <img :src="`/pix/${pix.token}/qrcode`" alt="QR Code PIX" class="w-32 h-32" />
                         </div>
                     </div>
                     <p class="text-xs text-muted-foreground mt-2">
@@ -126,18 +120,9 @@ const formatDate = (dateString: string) => {
                 <div v-if="pix.status === 'generated'">
                     <Label for="modal-share-link" class="text-sm font-medium">Link para Cliente</Label>
                     <div class="flex gap-2 mt-1">
-                        <Input 
-                            id="modal-share-link"
-                            v-model="shareLink" 
-                            readonly 
-                            class="text-xs"
-                        />
-                        <Button 
-                            @click="handleCopy('link', shareLink)" 
-                            variant="outline" 
-                            size="icon"
-                            :class="{ 'bg-green-50 text-green-600': copied === 'link' }"
-                        >
+                        <Input id="modal-share-link" v-model="shareLink" readonly class="text-xs" />
+                        <Button @click="handleCopy('link', shareLink)" variant="outline" size="icon"
+                            :class="{ 'bg-green-50 text-green-600': copied === 'link' }">
                             <CheckCircle v-if="copied === 'link'" class="h-4 w-4" />
                             <Copy v-else class="h-4 w-4" />
                         </Button>
@@ -162,24 +147,16 @@ const formatDate = (dateString: string) => {
 
                 <!-- Ações -->
                 <div v-if="pix.status === 'generated'" class="space-y-2">
-                    <Button 
-                        @click="handleShare" 
-                        class="w-full"
-                        :disabled="pix.status !== 'generated'"
-                    >
+                    <Button @click="handleShare" class="w-full" :disabled="pix.status !== 'generated'">
                         <Share2 class="mr-2 h-4 w-4" />
                         Compartilhar com Cliente
                     </Button>
-                    
-                    <Button 
-                        @click="() => window.open(shareLink, '_blank')" 
-                        variant="outline" 
-                        class="w-full"
-                        :disabled="pix.status !== 'generated'"
-                    >
-                        <ExternalLink class="mr-2 h-4 w-4" />
-                        Abrir Página de Pagamento
-                    </Button>
+                    <a :href="shareLink" target="_blank">
+                        <Button variant="outline" class="w-full" :disabled="pix.status !== 'generated'">
+                            <ExternalLink class="mr-2 h-4 w-4" />
+                            Abrir Página de Pagamento
+                        </Button>
+                    </a>
                 </div>
             </div>
         </DialogContent>

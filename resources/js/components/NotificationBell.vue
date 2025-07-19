@@ -20,8 +20,7 @@ const handleNotificationClick = async (notification: any) => {
     if (!notification.read_at) {
         await markAsRead(notification.id);
     }
-    
-    // Navigate to notification URL if provided
+
     if (notification.data?.url) {
         window.location.href = notification.data.url;
     }

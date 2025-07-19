@@ -44,10 +44,6 @@ const modalOpen = ref(false);
 const selectedPix = ref<PixRecord | null>(null);
 const currentPage = ref(props.filters?.page || 1);
 const pageSize = ref(props.filters?.per_page || 20);
-
-// No more expiration handling - server handles everything
-
-// Reactive data that will be updated from API
 const pixList = ref([...props.pixList]);
 const totalItems = ref(props.total || props.pixList.length);
 const isLoading = ref(false);
@@ -78,14 +74,11 @@ const updateFilters = (immediate = false) => {
 
         isLoading.value = true;
 
-        // Make API request using axios
         api.get('/pix', { params: Object.fromEntries(params) })
             .then(response => {
-                // Update the reactive data (server handles expiration)
                 pixList.value = response.data.data;
                 totalItems.value = response.data.meta.total;
 
-                // Update URL without page reload
                 const webUrl = `/pix/list${params.toString() ? '?' + params.toString() : ''}`;
                 window.history.pushState({}, '', webUrl);
             })
@@ -138,18 +131,14 @@ const handlePageSizeChange = (value: string | number) => {
     updateFilters(true);
 };
 
-// Watch for search changes with debounce
 watch(searchTerm, () => {
     currentPage.value = 1;
     updateFilters();
 });
 
-// Watch for current page changes (immediate)
 watch(currentPage, () => {
     updateFilters(true);
 });
-
-// No cleanup needed - server handles expiration
 </script>
 
 <template>

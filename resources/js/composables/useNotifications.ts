@@ -1,33 +1,43 @@
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, onMounted, type Ref } from 'vue';
 import api from '@/lib/axios';
 import { usePusherBeams } from '@/composables/usePusherBeams';
+import type { NotificationData, PaginatedResponse } from '@/types';
 
 export interface Notification {
     id: number;
     type: string;
     title: string;
     message: string;
-    data: any;
+    data: Record<string, unknown>;
     read_at: string | null;
     created_at: string;
 }
 
-export function useNotifications() {
-    const notifications = ref<Notification[]>([]);
-    const unreadCount = ref(0);
-    const isLoading = ref(false);
+interface UseNotificationsReturn {
+    notifications: Ref<Notification[]>;
+    unreadCount: Ref<number>;
+    isLoading: Ref<boolean>;
+    fetchNotifications: (page?: number, perPage?: number) => Promise<PaginatedResponse<Notification> | null>;
+    fetchUnreadCount: () => Promise<void>;
+    markAsRead: (notificationId: number) => Promise<void>;
+    markAllAsRead: () => Promise<void>;
+    initialize: () => Promise<void>;
+}
 
-    // Use shared Pusher Beams instance
+export function useNotifications(): UseNotificationsReturn {
+    const notifications = ref<Notification[]>([]);
+    const unreadCount = ref<number>(0);
+    const isLoading = ref<boolean>(false);
+
     const { beamsClient, isInitialized } = usePusherBeams();
 
-    // Fetch notifications from API
-    const fetchNotifications = async (page = 1, perPage = 20) => {
+    const fetchNotifications = async (page: number = 1, perPage: number = 20): Promise<PaginatedResponse<Notification> | null> => {
         isLoading.value = true;
         try {
-            const response = await api.get('/notifications', {
+            const response = await api.get<PaginatedResponse<Notification>>('/notifications', {
                 params: { page, per_page: perPage }
             });
-            
+
             notifications.value = response.data.data;
             return response.data;
         } catch (error) {
@@ -38,22 +48,19 @@ export function useNotifications() {
         }
     };
 
-    // Fetch unread count
-    const fetchUnreadCount = async () => {
+    const fetchUnreadCount = async (): Promise<void> => {
         try {
-            const response = await api.get('/notifications/unread-count');
+            const response = await api.get<{ count: number }>('/notifications/unread-count');
             unreadCount.value = response.data.count;
         } catch (error) {
             console.error('Failed to fetch unread count:', error);
         }
     };
 
-    // Mark notification as read
-    const markAsRead = async (notificationId: number) => {
+    const markAsRead = async (notificationId: number): Promise<void> => {
         try {
             await api.post(`/notifications/${notificationId}/read`);
-            
-            // Update local state
+
             const notification = notifications.value.find(n => n.id === notificationId);
             if (notification) {
                 notification.read_at = new Date().toISOString();
@@ -64,12 +71,10 @@ export function useNotifications() {
         }
     };
 
-    // Mark all notifications as read
-    const markAllAsRead = async () => {
+    const markAllAsRead = async (): Promise<void> => {
         try {
             await api.post('/notifications/mark-all-read');
-            
-            // Update local state
+
             notifications.value.forEach(notification => {
                 if (!notification.read_at) {
                     notification.read_at = new Date().toISOString();
@@ -81,45 +86,10 @@ export function useNotifications() {
         }
     };
 
-    // Handle incoming push notifications
-    const handlePushNotification = (payload: any) => {
-        console.log('Received push notification:', payload);
-        
-        // Update unread count
-        unreadCount.value += 1;
-        
-        // If we're on the dashboard and it's in focus, refresh notifications
-        if (document.hasFocus() && window.location.pathname === '/dashboard') {
-            fetchNotifications();
-        }
-        
-        // Show browser notification if page is not in focus
-        if (!document.hasFocus()) {
-            if ('Notification' in window && Notification.permission === 'granted') {
-                new Notification(payload.title, {
-                    body: payload.body,
-                    icon: payload.icon || '/favicon.ico',
-                    badge: payload.badge || '/favicon.ico',
-                });
-            }
-        }
-    };
-
-    // Request notification permission
-    const requestNotificationPermission = async () => {
-        if ('Notification' in window) {
-            const permission = await Notification.requestPermission();
-            return permission === 'granted';
-        }
-        return false;
-    };
-
-    // Initialize everything
-    const initialize = async () => {
+    const initialize = async (): Promise<void> => {
         await fetchUnreadCount();
     };
 
-    // Auto-initialize on mount
     onMounted(initialize);
 
     return {

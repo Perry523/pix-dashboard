@@ -1,16 +1,23 @@
 import { usePage } from '@inertiajs/vue3';
 import { setAuthToken, removeAuthToken } from '@/lib/axios';
 import { usePusherBeams } from '@/composables/usePusherBeams';
-import { computed, watch } from 'vue';
+import { computed, watch, type ComputedRef } from 'vue';
+import type { User } from '@/types';
 
-export function useAuth() {
+interface UseAuthReturn {
+    user: ComputedRef<User | undefined>;
+    token: ComputedRef<string | null>;
+    initializeAuth: () => Promise<void>;
+}
+
+export function useAuth(): UseAuthReturn {
     const page = usePage();
     const { clearPusherBeams, requestNotificationPermission } = usePusherBeams();
 
     const user = computed(() => page.props.auth?.user);
     const token = computed(() => localStorage.getItem('auth_token'));
 
-    const initializeAuth = async () => {
+    const initializeAuth = async (): Promise<void> => {
         if (token.value) {
             setAuthToken(token.value);
 
@@ -19,22 +26,18 @@ export function useAuth() {
             }
         } else {
             removeAuthToken();
-
             await clearPusherBeams();
         }
     };
 
-    // Watch for user changes (login/logout)
     watch(user, async (newUser) => {
         if (newUser && token.value) {
-            // User logged in - initialize Pusher Beams
             await requestNotificationPermission();
         } else if (!newUser) {
-            // User logged out - clear Pusher Beams
             await clearPusherBeams();
         }
     }, { immediate: true });
-    
+
     return {
         user,
         token,

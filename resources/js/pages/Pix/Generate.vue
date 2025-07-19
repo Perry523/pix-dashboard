@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { usePixGeneration, usePixValidation } from '@/composables/usePix';
 import AppSidebarLayout from '@/layouts/app/AppSidebarLayout.vue';
-import { Head, Link } from '@inertiajs/vue3';
+import { Head } from '@inertiajs/vue3';
 import { CheckCircle, Copy, LoaderCircle, QrCode, Timer } from 'lucide-vue-next';
 import { ref } from 'vue';
 import { useForm } from 'vee-validate';
@@ -24,8 +24,6 @@ const { handleSubmit, defineField, errors } = useForm({
 const [expiresInMinutes] = defineField('expires_in_minutes');
 const copied = ref(false);
 
-// Removed static countdown - server handles expiration with notifications
-
 const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleString('pt-BR');
 };
@@ -34,11 +32,8 @@ const handleGeneratePix = handleSubmit(async (values) => {
     await generatePix(values.expires_in_minutes);
 });
 
-// Removed unused handleCopyToken function
-
 const handleCopyUrl = async () => {
     if (!pixData.value) return;
-
     await copyToClipboard(pixData.value.payment_link);
 };
 

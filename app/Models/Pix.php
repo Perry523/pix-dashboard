@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Services\PusherBeamsService;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
@@ -35,6 +36,9 @@ class Pix extends Model
             if (empty($pix->token)) {
                 $pix->token = Str::uuid();
             }
+            if (empty($pix->status)) {
+                $pix->status = self::STATUS_GENERATED;
+            }
         });
     }
 
@@ -52,18 +56,49 @@ class Pix extends Model
     {
         $this->update(['status' => self::STATUS_EXPIRED]);
 
-        // Send push notification
-        $pusherBeamsService = app(PusherBeamsService::class);
-        $pusherBeamsService->sendPixExpiredNotification($this->user, $this->token);
+        try {
+            $pusherBeamsService = app(PusherBeamsService::class);
+            $pusherBeamsService->sendPixExpiredNotification($this->user, $this->token);
+        } catch (\Exception $e) {
+            // Log the error but don't fail the expiration process
+            Log::warning('Failed to send PIX expired notification', [
+                'pix_token' => $this->token,
+                'user_id' => $this->user_id,
+                'error' => $e->getMessage()
+            ]);
+        }
     }
 
     public function markAsPaid(): void
     {
         $this->update(['status' => self::STATUS_PAID]);
 
-        // Send push notification
-        $pusherBeamsService = app(PusherBeamsService::class);
-        $pusherBeamsService->sendPixPaidNotification($this->user, $this->token);
+        try {
+            $pusherBeamsService = app(PusherBeamsService::class);
+            $pusherBeamsService->sendPixPaidNotification($this->user, $this->token);
+        } catch (\Exception $e) {
+            // Log the error but don't fail the payment process
+            Log::warning('Failed to send PIX paid notification', [
+                'pix_token' => $this->token,
+                'user_id' => $this->user_id,
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+
+    public function sendCreationNotification(): void
+    {
+        try {
+            $pusherBeamsService = app(PusherBeamsService::class);
+            $pusherBeamsService->sendPixCreatedNotification($this->user, $this->token);
+        } catch (\Exception $e) {
+            // Log the error but don't fail the creation process
+            Log::warning('Failed to send PIX creation notification', [
+                'pix_token' => $this->token,
+                'user_id' => $this->user_id,
+                'error' => $e->getMessage()
+            ]);
+        }
     }
 
     public function getPaymentLink(): string

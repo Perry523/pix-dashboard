@@ -5,25 +5,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import PixDetailsModal from '@/components/PixDetailsModal.vue';
 import { useNotifications } from '@/composables/useNotifications';
 import AppLayout from '@/layouts/AppLayout.vue';
-import { type BreadcrumbItem } from '@/types';
+import { type BreadcrumbItem, type PixStats, type PixRecord } from '@/types';
 import { Head, Link } from '@inertiajs/vue3';
 import { CreditCard, Plus, QrCode, TrendingUp, RefreshCw } from 'lucide-vue-next';
 import { onMounted, onUnmounted, ref } from 'vue';
-
-interface PixStats {
-    generated: number;
-    paid: number;
-    expired: number;
-    total: number;
-}
-
-interface PixRecord {
-    id: number;
-    token: string;
-    status: 'generated' | 'paid' | 'expired';
-    expires_at: string;
-    created_at: string;
-}
 
 interface Props {
     pixStats: PixStats;
@@ -35,7 +20,6 @@ const props = defineProps<Props>();
 const modalOpen = ref(false);
 const selectedPix = ref<PixRecord | null>(null);
 
-// Reactive stats that can be updated by push notifications
 const stats = ref({
     total: props.pixStats.total,
     paid: props.pixStats.paid,
@@ -43,105 +27,36 @@ const stats = ref({
     generated: props.pixStats.generated,
 });
 
-// Initialize notifications
 const { fetchUnreadCount } = useNotifications();
 
-// Handle PIX status updates to update dashboard stats
 const handlePixStatusUpdate = (event: CustomEvent) => {
-    console.log('🔔 Dashboard received PIX status update:', event.detail);
+    const { type } = event.detail;
 
-    // Only update stats if dashboard is in focus (visible)
     if (document.hasFocus() && window.location.pathname === '/dashboard') {
-        console.log('📊 Dashboard is in focus, updating stats directly');
-
-        const { type } = event.detail;
-        console.log('📝 Update type:', type);
-
-        if (type === 'pix_paid') {
-            // Decrease generated count, increase paid count
-            const oldStats = { ...stats.value };
+        if (type === 'pix_created') {
+            stats.value.total += 1;
+            stats.value.generated += 1;
+        } else if (type === 'pix_paid') {
             stats.value.generated = Math.max(0, stats.value.generated - 1);
             stats.value.paid += 1;
-
-            console.log('💰 Updated stats for PIX payment:', {
-                before: oldStats,
-                after: stats.value
-            });
         } else if (type === 'pix_expired') {
-            // Decrease generated count, increase expired count
-            const oldStats = { ...stats.value };
             stats.value.generated = Math.max(0, stats.value.generated - 1);
             stats.value.expired += 1;
-
-            console.log('⏰ Updated stats for PIX expiration:', {
-                before: oldStats,
-                after: stats.value
-            });
         }
-
-        // Don't show browser notification since we're updating the UI directly
         return;
     }
 
-    console.log('🔕 Dashboard not in focus, using normal notification flow');
-    // If dashboard is not in focus, let the normal notification flow handle it
     fetchUnreadCount();
 };
 
-// Set up custom event listener for PIX status updates
 const setupPixStatusListener = () => {
-    // Listen for custom events
     const listener = (event: Event) => {
-        console.log('🎯 Dashboard received pix-status-update event:', event);
         handlePixStatusUpdate(event as CustomEvent);
     };
 
     window.addEventListener('pix-status-update', listener);
-
-    // Also listen directly to service worker messages as backup
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.addEventListener('message', (event) => {
-            console.log('🔧 Dashboard received service worker message:', event.data);
-
-            if (event.data && event.data.type === 'PUSH_NOTIFICATION') {
-                const payload = event.data.payload;
-                console.log('🔧 Processing push notification directly in Dashboard:', payload);
-
-                // Try to determine notification type
-                let notificationType = null;
-
-                if (payload.data?.type) {
-                    notificationType = payload.data.type;
-                } else if (payload.notification?.title) {
-                    const title = payload.notification.title.toLowerCase();
-                    if (title.includes('pago') || title.includes('paid')) {
-                        notificationType = 'pix_paid';
-                    } else if (title.includes('expirado') || title.includes('expired')) {
-                        notificationType = 'pix_expired';
-                    }
-                }
-
-                console.log('🔧 Direct detection - notification type:', notificationType);
-
-                if (notificationType === 'pix_paid' || notificationType === 'pix_expired') {
-                    // Create synthetic custom event
-                    const syntheticEvent = new CustomEvent('pix-status-update', {
-                        detail: {
-                            type: notificationType,
-                            payload: payload
-                        }
-                    });
-
-                    handlePixStatusUpdate(syntheticEvent);
-                }
-            }
-        });
-    }
-
-    console.log('✅ Dashboard PIX status listener set up (with service worker backup)');
 };
 
-// Handle page focus to refresh data if needed
 const handleFocus = () => {
     if (document.hasFocus()) {
         fetchUnreadCount();
@@ -150,8 +65,6 @@ const handleFocus = () => {
 
 onMounted(() => {
     window.addEventListener('focus', handleFocus);
-
-    // Set up PIX status listener
     setupPixStatusListener();
 });
 
@@ -188,9 +101,7 @@ const openPixDetails = (pix: PixRecord) => {
 };
 
 const refreshStats = async () => {
-    console.log('🔄 Manual refresh triggered');
     try {
-        // Fetch fresh stats from API
         const response = await fetch('/api/pix/stats', {
             headers: {
                 'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
@@ -206,12 +117,9 @@ const refreshStats = async () => {
                 expired: freshStats.expired,
                 generated: freshStats.generated,
             };
-            console.log('✅ Stats refreshed:', stats.value);
-        } else {
-            console.error('❌ Failed to refresh stats:', response.status);
         }
     } catch (error) {
-        console.error('❌ Error refreshing stats:', error);
+        console.error('Error refreshing stats:', error);
     }
 };
 </script>

@@ -14,9 +14,6 @@ class NotificationController extends Controller
         private PusherBeamsService $pusherBeamsService
     ) {}
 
-    /**
-     * Get user notifications
-     */
     public function index(Request $request): JsonResponse
     {
         $notifications = Auth::user()
@@ -35,9 +32,6 @@ class NotificationController extends Controller
         ]);
     }
 
-    /**
-     * Get unread notifications count
-     */
     public function unreadCount(): JsonResponse
     {
         $count = Auth::user()
@@ -48,12 +42,8 @@ class NotificationController extends Controller
         return response()->json(['count' => $count]);
     }
 
-    /**
-     * Mark notification as read
-     */
     public function markAsRead(Notification $notification): JsonResponse
     {
-        // Ensure user owns the notification
         if ($notification->user_id !== Auth::id()) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
@@ -63,9 +53,6 @@ class NotificationController extends Controller
         return response()->json(['success' => true]);
     }
 
-    /**
-     * Mark all notifications as read
-     */
     public function markAllAsRead(): JsonResponse
     {
         Auth::user()
@@ -76,9 +63,6 @@ class NotificationController extends Controller
         return response()->json(['success' => true]);
     }
 
-    /**
-     * Get Pusher Beams interest for current user
-     */
     public function beamsInterest(): JsonResponse
     {
         $interest = $this->pusherBeamsService->getUserInterestForFrontend(Auth::user());

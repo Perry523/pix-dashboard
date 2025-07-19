@@ -1,8 +1,7 @@
-import axios from 'axios';
+import axios, { type AxiosInstance } from 'axios';
 import { usePage } from '@inertiajs/vue3';
 
-// Create axios instance
-const api = axios.create({
+const api: AxiosInstance = axios.create({
     baseURL: '/api',
     headers: {
         'Content-Type': 'application/json',
@@ -10,15 +9,12 @@ const api = axios.create({
     },
 });
 
-// Function to get token from localStorage or Inertia page props
 const getToken = (): string | null => {
-    // First try localStorage
     const storedToken = localStorage.getItem('api_token');
     if (storedToken) {
         return storedToken;
     }
-    
-    // Fallback to Inertia page props
+
     try {
         const page = usePage();
         return page.props.auth?.token || null;
@@ -27,47 +23,38 @@ const getToken = (): string | null => {
     }
 };
 
-// Function to store token in localStorage
-export const setAuthToken = (token: string) => {
+export const setAuthToken = (token: string): void => {
     localStorage.setItem('api_token', token);
     api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
 };
 
-// Function to remove token
-export const removeAuthToken = () => {
+export const removeAuthToken = (): void => {
     localStorage.removeItem('api_token');
     delete api.defaults.headers.common['Authorization'];
 };
 
-// Request interceptor to add token
 api.interceptors.request.use(
     (config) => {
         const token = getToken();
-        if (token) {
+        if (token && config.headers) {
             config.headers.Authorization = `Bearer ${token}`;
         }
-        
-        // Add CSRF token
+
         const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-        if (csrfToken) {
+        if (csrfToken && config.headers) {
             config.headers['X-CSRF-TOKEN'] = csrfToken;
         }
-        
+
         return config;
     },
-    (error) => {
-        return Promise.reject(error);
-    }
+    (error) => Promise.reject(error)
 );
 
-// Response interceptor to handle auth errors
 api.interceptors.response.use(
     (response) => response,
     (error) => {
         if (error.response?.status === 401) {
-            // Token expired or invalid, remove it
             removeAuthToken();
-            // Optionally redirect to login
             window.location.href = '/login';
         }
         return Promise.reject(error);

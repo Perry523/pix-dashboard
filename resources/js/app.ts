@@ -8,8 +8,7 @@ import { ZiggyVue } from 'ziggy-js';
 import { initializeTheme } from './composables/useAppearance';
 import { setAuthToken } from './lib/axios';
 
-// Initialize notification interceptor for Dashboard updates
-import './utils/notificationInterceptor.js';
+import './utils/notificationInterceptor';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
@@ -31,10 +30,8 @@ createInertiaApp({
     },
 });
 
-// This will set light / dark mode on page load...
 initializeTheme();
 
-// Register service worker for PWA
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
         navigator.serviceWorker.register('/service-worker.js')

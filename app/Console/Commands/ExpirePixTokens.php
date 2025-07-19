@@ -7,28 +7,13 @@ use Illuminate\Console\Command;
 
 class ExpirePixTokens extends Command
 {
-    /**
-     * The name and signature of the console command.
-     *
-     * @var string
-     */
     protected $signature = 'pix:expire';
 
-    /**
-     * The console command description.
-     *
-     * @var string
-     */
     protected $description = 'Expire PIX tokens that have passed their expiration time and send notifications';
 
-    /**
-     * Execute the console command.
-     */
     public function handle(PixExpirationService $expirationService)
     {
         $startTime = microtime(true);
-
-        // Always run expiration check (no force option needed)
         $expiredCount = $expirationService->expireTokens();
 
         $endTime = microtime(true);

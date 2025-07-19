@@ -22,7 +22,7 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits<Emits>();
 
 const totalPages = computed(() => {
-    if (props.pageSize === -1) return 1; // "All" option
+    if (props.pageSize === -1) return 1;
     return Math.ceil(props.totalItems / props.pageSize);
 });
 

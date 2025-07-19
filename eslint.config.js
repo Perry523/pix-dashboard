@@ -12,7 +12,14 @@ export default defineConfigWithVueTs(
     {
         rules: {
             'vue/multi-word-component-names': 'off',
-            '@typescript-eslint/no-explicit-any': 'off',
+            '@typescript-eslint/no-explicit-any': 'warn',
+            '@typescript-eslint/no-unused-vars': 'error',
+            '@typescript-eslint/prefer-const': 'error',
+            '@typescript-eslint/no-inferrable-types': 'error',
+            '@typescript-eslint/explicit-function-return-type': 'off',
+            '@typescript-eslint/explicit-module-boundary-types': 'off',
+            'prefer-const': 'error',
+            'no-var': 'error',
         },
     },
     prettier,

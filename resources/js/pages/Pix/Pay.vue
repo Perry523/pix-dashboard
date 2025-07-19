@@ -1,10 +1,8 @@
 <script setup lang="ts">
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Card, CardContent } from '@/components/ui/card';
 import { Head } from '@inertiajs/vue3';
-import { CheckCircle, Copy, QrCode, Timer, Smartphone, CreditCard } from 'lucide-vue-next';
+import { CheckCircle, Copy, Timer, Smartphone, CreditCard } from 'lucide-vue-next';
 import { computed, ref } from 'vue';
 
 interface PixData {
@@ -26,8 +24,6 @@ interface Props {
 const props = defineProps<Props>();
 
 const copied = ref(false);
-
-// Removed static countdown - server handles expiration with notifications
 
 const confirmationLink = computed(() => {
     return `${window.location.origin}/pix/${props.pix.token}`;

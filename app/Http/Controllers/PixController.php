@@ -14,20 +14,16 @@ class PixController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        // Expiration is handled by scheduled job every minute
         $query = Auth::user()->pix()->latest();
 
-        // Apply search filter
         if ($request->has('search') && $request->search) {
             $query->where('token', 'like', '%' . $request->search . '%');
         }
 
-        // Apply status filter
         if ($request->has('status') && $request->status !== 'all') {
             $query->where('status', $request->status);
         }
 
-        // Pagination
         $perPage = $request->get('per_page', 20);
         if ($perPage === 'all') {
             $pixList = $query->get();
@@ -70,6 +66,8 @@ class PixController extends Controller
             'expires_at' => now()->addMinutes($expiresInMinutes),
         ]);
 
+        $pix->sendCreationNotification();
+
         return response()->json($pix->getShareableData());
     }
 
@@ -77,8 +75,6 @@ class PixController extends Controller
     {
         $pix = Pix::where('token', $token)->with('user')->firstOrFail();
 
-        // Only mark as paid if still generated (not expired)
-        // Expiration is handled by scheduled job every minute
         if ($pix->status === Pix::STATUS_GENERATED) {
             $pix->markAsPaid();
         }
@@ -117,13 +113,20 @@ class PixController extends Controller
     {
         $user = Auth::user();
 
-        $stats = [
-            'total' => $user->pix()->count(),
-            'paid' => $user->pix()->where('status', Pix::STATUS_PAID)->count(),
-            'expired' => $user->pix()->where('status', Pix::STATUS_EXPIRED)->count(),
-            'generated' => $user->pix()->where('status', Pix::STATUS_GENERATED)->count(),
-        ];
+        $stats = $user->pix()
+            ->selectRaw('
+                COUNT(*) as total,
+                SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as paid,
+                SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as expired,
+                SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as generated
+            ', [Pix::STATUS_PAID, Pix::STATUS_EXPIRED, Pix::STATUS_GENERATED])
+            ->first();
 
-        return response()->json($stats);
+        return response()->json([
+            'total' => (int) $stats->total,
+            'paid' => (int) $stats->paid,
+            'expired' => (int) $stats->expired,
+            'generated' => (int) $stats->generated,
+        ]);
     }
 }

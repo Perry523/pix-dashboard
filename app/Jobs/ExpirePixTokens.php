@@ -16,7 +16,6 @@ class ExpirePixTokens implements ShouldQueue
 
     public function handle(PixExpirationService $expirationService): void
     {
-        // Use optimized service to expire tokens
         $expiredCount = $expirationService->expireTokens();
 
         if ($expiredCount > 0) {

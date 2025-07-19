@@ -1,41 +1,41 @@
-import { ref } from 'vue';
+import { ref, type Ref } from 'vue';
 import * as PusherPushNotifications from '@pusher/push-notifications-web';
 import { usePage } from '@inertiajs/vue3';
-import { User } from '@/types';
+import type { User } from '@/types';
 
-const beamsClient = ref<any>(null);
-const isInitialized = ref(false);
+const beamsClient = ref<PusherPushNotifications.Client | null>(null);
+const isInitialized = ref<boolean>(false);
 
-export function usePusherBeams() {
-    // Initialize Pusher Beams (call this on login)
-    const initializePusherBeams = async () => {
+interface UsePusherBeamsReturn {
+    beamsClient: Ref<PusherPushNotifications.Client | null>;
+    isInitialized: Ref<boolean>;
+    initializePusherBeams: () => Promise<boolean>;
+    clearPusherBeams: () => Promise<void>;
+    requestNotificationPermission: () => Promise<boolean>;
+}
+
+export function usePusherBeams(): UsePusherBeamsReturn {
+    const initializePusherBeams = async (): Promise<boolean> => {
         const page = usePage();
         const user = page.props.auth.user as User;
         try {
-            // Get Pusher Beams instance ID from environment
             const instanceId = import.meta.env.VITE_PUSHER_BEAMS_INSTANCE_ID;
-            
+
             if (!instanceId) {
                 console.warn('Pusher Beams instance ID not configured');
                 return false;
             }
 
-            // Create client if not exists
             if (!beamsClient.value) {
                 beamsClient.value = new PusherPushNotifications.Client({
                     instanceId: instanceId,
                 });
             }
 
-            // Start Pusher Beams
             await beamsClient.value.start();
-
-            // Subscribe to user interest
             await beamsClient.value.addDeviceInterest(`${user.id}`);
 
             isInitialized.value = true;
-            console.log('Pusher Beams initialized successfully with interest:', user.id);
-            
             return true;
         } catch (error) {
             console.error('Failed to initialize Pusher Beams:', error);
@@ -44,21 +44,18 @@ export function usePusherBeams() {
         }
     };
 
-    // Clear interests on logout
-    const clearPusherBeams = async () => {
+    const clearPusherBeams = async (): Promise<void> => {
         try {
             if (beamsClient.value && isInitialized.value) {
                 await beamsClient.value.clearAllState();
                 isInitialized.value = false;
-                console.log('Pusher Beams cleared successfully');
             }
         } catch (error) {
             console.error('Failed to clear Pusher Beams:', error);
         }
     };
 
-    // Request notification permission
-    const requestNotificationPermission = async () => {
+    const requestNotificationPermission = async (): Promise<boolean> => {
         if ('Notification' in window) {
             const permission = await Notification.requestPermission();
             return permission === 'granted';

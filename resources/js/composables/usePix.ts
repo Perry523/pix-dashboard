@@ -2,44 +2,30 @@ import { router } from '@inertiajs/vue3';
 import { useForm } from 'vee-validate';
 import { toTypedSchema } from '@vee-validate/yup';
 import * as yup from 'yup';
-import { ref } from 'vue';
+import { ref, type Ref } from 'vue';
 import api from '@/lib/axios';
+import type { PixData, PixStats, PixRecord } from '@/types';
 
-export interface PixData {
-    token: string;
-    expires_at: string;
-    payment_link: string;
-    qr_code_svg: string;
-    qr_code_base64: string;
-    status: string;
+interface UsePixGenerationReturn {
+    isLoading: Ref<boolean>;
+    pixData: Ref<PixData | null>;
+    error: Ref<string | null>;
+    generatePix: (expiresInMinutes?: number) => Promise<void>;
+    copyToClipboard: (text: string) => Promise<boolean>;
+    reset: () => void;
 }
 
-export interface PixStats {
-    generated: number;
-    paid: number;
-    expired: number;
-    total: number;
-}
-
-export interface PixRecord {
-    id: number;
-    token: string;
-    status: 'generated' | 'paid' | 'expired';
-    expires_at: string;
-    created_at: string;
-}
-
-export function usePixGeneration() {
-    const isLoading = ref(false);
+export function usePixGeneration(): UsePixGenerationReturn {
+    const isLoading = ref<boolean>(false);
     const pixData = ref<PixData | null>(null);
     const error = ref<string | null>(null);
 
-    const generatePix = async (expiresInMinutes: number = 10) => {
+    const generatePix = async (expiresInMinutes: number = 10): Promise<void> => {
         isLoading.value = true;
         error.value = null;
 
         try {
-            const response = await api.post('/pix', {
+            const response = await api.post<PixData>('/pix', {
                 expires_in_minutes: expiresInMinutes
             });
             pixData.value = response.data;
@@ -50,7 +36,7 @@ export function usePixGeneration() {
         }
     };
 
-    const copyToClipboard = async (text: string) => {
+    const copyToClipboard = async (text: string): Promise<boolean> => {
         try {
             await navigator.clipboard.writeText(text);
             return true;
@@ -59,7 +45,7 @@ export function usePixGeneration() {
         }
     };
 
-    const reset = () => {
+    const reset = (): void => {
         pixData.value = null;
         error.value = null;
         isLoading.value = false;
@@ -75,8 +61,12 @@ export function usePixGeneration() {
     };
 }
 
-export function usePixConfirmation() {
-    const confirmPix = (token: string) => {
+interface UsePixConfirmationReturn {
+    confirmPix: (token: string) => void;
+}
+
+export function usePixConfirmation(): UsePixConfirmationReturn {
+    const confirmPix = (token: string): void => {
         router.visit(route('pix.confirm', token));
     };
 
@@ -85,7 +75,11 @@ export function usePixConfirmation() {
     };
 }
 
-export function usePixValidation() {
+interface UsePixValidationReturn {
+    pixGenerationSchema: ReturnType<typeof toTypedSchema>;
+}
+
+export function usePixValidation(): UsePixValidationReturn {
     const pixGenerationSchema = toTypedSchema(
         yup.object({
             expires_in_minutes: yup
@@ -100,5 +94,3 @@ export function usePixValidation() {
         pixGenerationSchema,
     };
 }
-
-

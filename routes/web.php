@@ -20,7 +20,7 @@ Route::middleware(['auth'])->group(function () {
     })->name('pix.generate');
 
     Route::get('pix/list', function (Request $request) {
-        $pixController = app(PixController::class);
+        $pixController = new PixController();
         $apiResponse = $pixController->index($request);
         $data = $apiResponse->getData(true);
 

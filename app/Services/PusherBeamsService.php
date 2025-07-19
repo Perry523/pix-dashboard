@@ -19,12 +19,8 @@ class PusherBeamsService
         ]);
     }
 
-    /**
-     * Send notification to specific user using interests
-     */
     public function sendToUser(User $user, string $title, string $message, array $data = []): void
     {
-        // Create notification in database
         $notification = Notification::create([
             'user_id' => $user->id,
             'type' => $data['type'] ?? 'general',
@@ -33,7 +29,6 @@ class PusherBeamsService
             'data' => $data,
         ]);
 
-        // Send push notification using interests (user email)
         try {
             $this->beamsClient->publishToInterests(
                 ["$user->id"],
@@ -55,18 +50,11 @@ class PusherBeamsService
         }
     }
 
-    /**
-     * Get user interest (sanitized email)
-     */
     private function getUserInterest(User $user): string
     {
-        // Use email as interest, but sanitize it for Pusher Beams
         return 'user-' . str_replace(['@', '.'], ['-at-', '-dot-'], $user->email);
     }
 
-    /**
-     * Send PIX payment notification
-     */
     public function sendPixPaidNotification(User $user, string $pixToken): void
     {
         $this->sendToUser(
@@ -81,9 +69,6 @@ class PusherBeamsService
         );
     }
 
-    /**
-     * Send PIX expiration notification
-     */
     public function sendPixExpiredNotification(User $user, string $pixToken): void
     {
         $this->sendToUser(
@@ -98,9 +83,20 @@ class PusherBeamsService
         );
     }
 
-    /**
-     * Get user interest for frontend subscription
-     */
+    public function sendPixCreatedNotification(User $user, string $pixToken): void
+    {
+        $this->sendToUser(
+            $user,
+            'PIX Criado!',
+            "Seu PIX {$pixToken} foi criado com sucesso.",
+            [
+                'type' => 'pix_created',
+                'pix_token' => $pixToken,
+                'url' => '/dashboard',
+            ]
+        );
+    }
+
     public function getUserInterestForFrontend(User $user): string
     {
         return $this->getUserInterest($user);
