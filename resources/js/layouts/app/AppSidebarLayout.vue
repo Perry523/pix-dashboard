@@ -4,6 +4,9 @@ import AppShell from '@/components/AppShell.vue';
 import AppSidebar from '@/components/AppSidebar.vue';
 import AppSidebarHeader from '@/components/AppSidebarHeader.vue';
 import type { BreadcrumbItemType } from '@/types';
+import { usePusherBeams } from '@/composables/usePusherBeams';
+const pusherBeams = usePusherBeams();
+pusherBeams.initializePusherBeams();
 
 interface Props {
     breadcrumbs?: BreadcrumbItemType[];

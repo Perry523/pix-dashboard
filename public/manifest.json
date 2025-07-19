@@ -1,0 +1,20 @@
+{
+  "name": "PIX Manager",
+  "short_name": "PIX Manager",
+  "description": "Gerenciador de códigos PIX com notificações push",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#000000",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    }
+  ],
+  "permissions": [
+    "notifications"
+  ]
+}

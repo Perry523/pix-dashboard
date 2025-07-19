@@ -6,6 +6,10 @@ import type { DefineComponent } from 'vue';
 import { createApp, h } from 'vue';
 import { ZiggyVue } from 'ziggy-js';
 import { initializeTheme } from './composables/useAppearance';
+import { setAuthToken } from './lib/axios';
+
+// Initialize notification interceptor for Dashboard updates
+import './utils/notificationInterceptor.js';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
@@ -13,10 +17,14 @@ createInertiaApp({
     title: (title) => (title ? `${title} - ${appName}` : appName),
     resolve: (name) => resolvePageComponent(`./pages/${name}.vue`, import.meta.glob<DefineComponent>('./pages/**/*.vue')),
     setup({ el, App, props, plugin }) {
-        createApp({ render: () => h(App, props) })
+        const app = createApp({ render: () => h(App, props) })
             .use(plugin)
-            .use(ZiggyVue)
-            .mount(el);
+            .use(ZiggyVue);
+        const token = props.initialPage.props.auth?.token;
+        if (token) {
+            setAuthToken(token);
+        }
+        app.mount(el);
     },
     progress: {
         color: '#4B5563',
@@ -25,3 +33,13 @@ createInertiaApp({
 
 // This will set light / dark mode on page load...
 initializeTheme();
+
+// Register service worker for PWA
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/service-worker.js')
+            .catch((registrationError) => {
+                console.log('SW registration failed: ', registrationError);
+            });
+    });
+}
